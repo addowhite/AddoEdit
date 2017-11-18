@@ -4,6 +4,7 @@ html, body, #root, .App {
   height: 100%;
 }
 
+/*
 .ace_info {
   background: none !important;
   pointer-events: none !important;
@@ -12,3 +13,4 @@ html, body, #root, .App {
 .ace_tooltip {
   display: none !important;
 }
+*/

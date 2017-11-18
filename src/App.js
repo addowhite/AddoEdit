@@ -5,6 +5,7 @@ import './App.css'
 // Ace editor imports
 import brace from 'brace'
 import AceEditor from 'react-ace'
+import 'brace/ext/language_tools'
 import 'brace/mode/javascript'
 import 'brace/mode/java'
 import 'brace/mode/python'
@@ -14,6 +15,8 @@ import 'brace/mode/mysql'
 import 'brace/mode/json'
 import 'brace/mode/html'
 import 'brace/mode/xml'
+import 'brace/mode/php'
+import 'brace/mode/text'
 import 'brace/theme/monokai'
 import 'brace/theme/github'
 import 'brace/theme/tomorrow'
@@ -54,7 +57,7 @@ class App extends Component {
       showGutter: true,
       showPrintMargin: false,
       highlightActiveLine: true,
-      enableSnippets: false,
+      enableSnippets: true,
       showLineNumbers: true,
       tabSize: 2
     }
@@ -68,7 +71,9 @@ class App extends Component {
       'sql'  : 'mysql',
       'json' : 'json',
       'html' : 'html',
-      'xml'  : 'xml'
+      'xml'  : 'xml',
+      'php'  : 'php',
+      'txt'  : 'text'
     }
 
     this.settingsFilePath = app.getPath('userData') + '\\settings.json'
@@ -161,6 +166,7 @@ class App extends Component {
   }
 
   onDrop(ev) {
+    if (!ev || !ev.dataTransfer || !ev.dataTransfer.files || !ev.dataTransfer.files[0] || !ev.dataTransfer.files[0].path) return
     let filePath = ev.dataTransfer.files[0].path
     if (filePath !== '')
       this.loadFile(filePath)
@@ -187,6 +193,8 @@ class App extends Component {
           value={this.state.value}
           theme={this.state.theme}
           mode={this.state.mode}
+          enableBasicAutocompletion={true}
+          enableLiveAutocompletion={true}
           fontSize={this.state.fontSize}
           showGutter={this.state.showGutter}
           showPrintMargin={this.state.showPrintMargin}
@@ -203,7 +211,8 @@ class App extends Component {
           height='100%'
           setOptions={{
             scrollPastEnd: true,
-            fadeFoldWidgets: true
+            fadeFoldWidgets: true,
+            useWorker: false
           }}
         />
       </div>
