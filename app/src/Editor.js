@@ -159,7 +159,7 @@ class Editor extends Component {
     }
 
     return (
-      <div className='editor'>
+      <div className='editor' style={{display : this.props.currentFileId === -1 ? 'none' : 'block' }}>
         <AceEditor
           value={this.state.value}
           theme={this.state.theme}
@@ -176,6 +176,7 @@ class Editor extends Component {
           onChange={this.onEditorChange}
           onBlur={this.onEditorBlur}
           tabSize={this.state.tabSize}
+          readOnly={this.props.currentFileId === -1}
           focus={true}
           name='editor'
           width='100%'
