@@ -1,0 +1,44 @@
+.tab-stream {
+  background-color: #232323;
+  color: #e2e2e2;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 160px [col-start]);
+  cursor: default;
+  user-select: none;
+}
+
+.tab {
+  border: none;
+  border-right: dotted 1px #404040;
+}
+
+.tab p {
+  margin: 0;
+  padding: 0 2em 0 1em;
+  text-align: center;
+  line-height: 30px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 15px;
+}
+
+.tab.selected {
+  background-color: #323232;
+}
+
+.tab .close-button {
+  float: right;
+  position: relative;
+  width: 10px;
+  height: 10px;
+  top: -19px;
+  right: 12px;
+  border-radius: 4px;
+  background-color: #424242;
+}
+
+.tab .close-button:hover {
+  background-color: #606060;
+}
