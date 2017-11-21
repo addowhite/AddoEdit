@@ -9,6 +9,10 @@ let forceQuit = false;
 
 ipcMain.on('file-save', saveCurrentFile)
 
+ipcMain.on('editor-ready', () => {
+  mainWindow.webContents.send('editor-ready')
+})
+
 function getThemeChangerCallback(themeName) {
   return () => mainWindow.webContents.send('theme-change', { msg: themeName })
 }

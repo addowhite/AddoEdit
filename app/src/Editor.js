@@ -115,7 +115,7 @@ class Editor extends Component {
       if (this.state.hasOwnProperty(prop) && prop !== 'value')
         stateCopy[prop] = this.state[prop]
 
-    fs.writeFile(this.settingsFilePath, JSON.stringify(stateCopy), (error) => {
+    fs.writeFileSync(this.settingsFilePath, JSON.stringify(stateCopy), (error) => {
       if (error) {
         alert('Failed save settings. ' + error.message)
         return
@@ -131,6 +131,7 @@ class Editor extends Component {
       bindKey: { win: "Ctrl-S", mac: "Command-S" },
       exec: () => ipcRenderer.send('file-save')
     })
+    ipcRenderer.send('editor-ready')
   }
 
   onEditorChange(newValue) {
@@ -152,14 +153,15 @@ class Editor extends Component {
       if (currentFile) {
         this.state.value = currentFile.contents
         this.state.mode = this.fileExtensions[currentFile.path.substr(currentFile.path.lastIndexOf('.') + 1)]
-        this.state.tabId = this.props.currentFileId
       } else if (this.props.currentFileId === -1) {
         this.state.value = ''
       }
+
+      this.state.tabId = this.props.currentFileId
     }
 
     return (
-      <div className='editor' style={{display : this.props.currentFileId === -1 ? 'none' : 'block' }}>
+      <div className='editor' style={{opacity : this.props.currentFileId === -1 ? '1' : '1' }}>
         <AceEditor
           value={this.state.value}
           theme={this.state.theme}
@@ -176,7 +178,7 @@ class Editor extends Component {
           onChange={this.onEditorChange}
           onBlur={this.onEditorBlur}
           tabSize={this.state.tabSize}
-          readOnly={this.props.currentFileId === -1}
+          // readOnly={this.props.currentFileId === -1}
           focus={true}
           name='editor'
           width='100%'

@@ -5,6 +5,7 @@ import Editor from './Editor.js'
 const electron = window.require('electron')
 const ipcRenderer = electron.ipcRenderer
 const fs = window.require('fs')
+const app = electron.remote.app
 
 const webFrame = electron.webFrame
 webFrame.registerURLSchemeAsPrivileged('file')
@@ -26,12 +27,16 @@ class App extends Component {
     this.openFile    = this.openFile.bind(this);
     this.saveFile    = this.saveFile.bind(this);
     this.saveAll     = this.saveAll.bind(this);
+    this.loadSession = this.loadSession.bind(this);
+    this.saveSession = this.saveSession.bind(this);
 
     this.nextTabId = 0;
 
     this.state = {};
     this.state.currentFileId = -1;
     this.state.files = {};
+
+    this.sessionFilePath = app.getPath('userData') + '\\session.json'
 
     document.addEventListener('dragover', cancelEvent)
     document.addEventListener('drop', this.onDrop)
@@ -43,12 +48,45 @@ class App extends Component {
           this.openFile(files[i])
     })
 
-    // ipcRenderer.on('file-save', () => this.saveFile(this.state.files[this.state.currentFileId]))
     ipcRenderer.on('file-save', () => this.saveAll())
+    ipcRenderer.on('editor-ready', () => this.loadSession())
+  }
+
+  loadSession() {
+    if (fs.existsSync(this.sessionFilePath)) {
+      fs.readFile(this.sessionFilePath, 'utf-8', (error, data) => {
+        if (error) {
+          alert('Failed to load settings. ' + error.message)
+          return
+        }
+
+        let session = JSON.parse(data)
+        for (let i = 0; i < session.tabs.length; ++i)
+          this.openFile(session.tabs[i].path, session.tabs[i].order, session.selectedFileIndex)
+      })
+    }
+  }
+
+  saveSession() {
+    let currentFile = this.state.files[this.state.currentFileId]
+    let session = {
+      selectedFileIndex: (currentFile === undefined) ? -1 : currentFile.tabOrder,
+      tabs: []
+    }
+    for (let fileName in this.state.files) {
+      if (!this.state.files.hasOwnProperty(fileName)) continue
+      currentFile = this.state.files[fileName]
+      session.tabs.push({
+        path: currentFile.path,
+        order: currentFile.tabOrder
+      })
+    }
+
+    fs.writeFileSync(this.sessionFilePath, JSON.stringify(session))
   }
 
   getNewTabId() {
-    return this.nextTabId++;
+    return this.nextTabId++
   }
 
   onDrop(ev) {
@@ -60,7 +98,7 @@ class App extends Component {
   }
 
   changeTab(tabId) {
-    this.setState({ currentFileId: tabId })
+    this.setState({ currentFileId: tabId }, this.saveSession)
   }
 
   closeTab(tabId) {
@@ -69,34 +107,42 @@ class App extends Component {
       this.changeTab(-1)
     else
       this.changeTab(Number(Object.keys(this.state.files)[0]))
+    this.saveSession()
   }
 
-  openFile(filePath) {
+  openFile(filePath, tabOrder, selectedFileIndex) {
     fs.readFile(filePath, 'utf-8', (error, data) => {
       if (error) {
         alert('Failed to read file: \'' + filePath + '\'. ' + error.message)
         return
       }
       let file = {};
-      file.path = filePath;
-      file.name = filePath.substr(Math.max(filePath.lastIndexOf('\\'), filePath.lastIndexOf('/')) + 1);
-      file.contents = data;
-      file.tabId = this.getNewTabId();
-      file.onTabClick = () => this.changeTab(file.tabId);
+      file.path = filePath
+      file.name = filePath.substr(Math.max(filePath.lastIndexOf('\\'), filePath.lastIndexOf('/')) + 1)
+      file.contents = data
+      file.tabId = this.getNewTabId()
+      file.tabOrder = tabOrder
+      file.onTabClick = (ev) => this.changeTab(file.tabId)
       file.onTabClose = (ev) => {
         ev.stopPropagation()
         this.closeTab(file.tabId)
       }
-      file.scrollTop = 0;
+      file.scrollTop = 0
+
+      if (file.tabOrder === undefined)
+        file.tabOrder = Object.values(this.state.files).reduce((accumulator, file) => Math.max(accumulator, file.tabOrder), -1) + 1
 
       let newFileEntry = {}
       newFileEntry[file.tabId] = file
 
-      this.setState({
-        files: Object.assign({}, this.state.files, newFileEntry),
-        currentFileId: file.tabId
-      });
-    });
+      let stateChanges = { files: Object.assign({}, this.state.files, newFileEntry) }
+
+      if (selectedFileIndex !== undefined && file.tabOrder === selectedFileIndex)
+        stateChanges.currentFileId = file.tabId
+
+      this.setState(stateChanges)
+      this.saveSession()
+    })
   }
 
   saveFile(file) {
