@@ -42,18 +42,15 @@ class Editor extends Component {
     this.editor = undefined
 
     this.state = {
-      tabId: this.props.currentFileId,
-      currentFilePath: '',
-      value: '',
       theme: 'twilight',
-      mode: 'javascript',
       fontSize: 14,
       showGutter: true,
       showPrintMargin: false,
       highlightActiveLine: true,
       enableSnippets: false,
       showLineNumbers: true,
-      tabSize: 2
+      tabSize: 2,
+      hidden: false
     }
 
     this.fileExtensions = {
@@ -131,41 +128,27 @@ class Editor extends Component {
       bindKey: { win: "Ctrl-S", mac: "Command-S" },
       exec: () => ipcRenderer.send('file-save')
     })
+    editor.commands.addCommand({
+      name: "open",
+      bindKey: { win: "Ctrl-O", mac: "Command-O" },
+      exec: () => ipcRenderer.send('file-choose-open')
+    })
     ipcRenderer.send('editor-ready')
   }
 
   onEditorChange(newValue) {
-    this.setState({ value: newValue })
-    this.getCurrentFile().contents = newValue
+    let file = this.getCurrentFile()
+    if (file)
+      file.contents = newValue
   }
 
   render() {
-    if (this.props.currentFileId !== this.state.tabId) {
-      let currentFile = this.getCurrentFile();
-      if (this.editor) {
-        let prevFile = this.props.files[this.state.tabId]
-        if (prevFile)
-          prevFile.scrollTop = this.editor.session.getScrollTop()
-        if (currentFile)
-          this.editor.session.setScrollTop(currentFile.scrollTop)
-      }
-
-      if (currentFile) {
-        this.state.value = currentFile.contents
-        this.state.mode = this.fileExtensions[currentFile.path.substr(currentFile.path.lastIndexOf('.') + 1)]
-      } else if (this.props.currentFileId === -1) {
-        this.state.value = ''
-      }
-
-      this.state.tabId = this.props.currentFileId
-    }
-
     return (
-      <div className='editor' style={{opacity : this.props.currentFileId === -1 ? '1' : '1' }}>
+      <div className='editor' style={{ display: this.props.files.hasOwnProperty(this.props.currentFileId) ? 'block' : 'none' }}>
         <AceEditor
-          value={this.state.value}
+          value={this.props.files.hasOwnProperty(this.props.currentFileId) ? this.props.files[this.props.currentFileId].contents : ''}
           theme={this.state.theme}
-          mode={this.state.mode}
+          mode={this.fileExtensions[this.props.files.hasOwnProperty(this.props.currentFileId) ? this.props.files[this.props.currentFileId].ext : 'txt']}
           enableBasicAutocompletion={true}
           enableLiveAutocompletion={true}
           fontSize={this.state.fontSize}
@@ -178,7 +161,6 @@ class Editor extends Component {
           onChange={this.onEditorChange}
           onBlur={this.onEditorBlur}
           tabSize={this.state.tabSize}
-          // readOnly={this.props.currentFileId === -1}
           focus={true}
           name='editor'
           width='100%'

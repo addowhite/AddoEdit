@@ -48,8 +48,8 @@ class App extends Component {
           this.openFile(files[i])
     })
 
-    ipcRenderer.on('file-save', () => this.saveAll())
-    ipcRenderer.on('editor-ready', () => this.loadSession())
+    ipcRenderer.on('file-save', this.saveAll)
+    ipcRenderer.on('editor-ready', this.loadSession)
   }
 
   loadSession() {
@@ -62,23 +62,24 @@ class App extends Component {
 
         let session = JSON.parse(data)
         for (let i = 0; i < session.tabs.length; ++i)
-          this.openFile(session.tabs[i].path, session.tabs[i].order, session.selectedFileIndex)
+          this.openFile(session.tabs[i].path, session.tabs[i].order, session.tabs[i].selected)
       })
     }
   }
 
   saveSession() {
-    let currentFile = this.state.files[this.state.currentFileId]
+    let selectedFile = this.state.files[this.state.currentFileId]
     let session = {
-      selectedFileIndex: (currentFile === undefined) ? -1 : currentFile.tabOrder,
       tabs: []
     }
+    let currentFile
     for (let fileName in this.state.files) {
       if (!this.state.files.hasOwnProperty(fileName)) continue
       currentFile = this.state.files[fileName]
       session.tabs.push({
         path: currentFile.path,
-        order: currentFile.tabOrder
+        order: currentFile.tabOrder,
+        selected: (selectedFile === undefined) ? false : currentFile.tabOrder === selectedFile.tabOrder
       })
     }
 
@@ -107,10 +108,11 @@ class App extends Component {
       this.changeTab(-1)
     else
       this.changeTab(Number(Object.keys(this.state.files)[0]))
-    this.saveSession()
   }
 
-  openFile(filePath, tabOrder, selectedFileIndex) {
+  openFile(filePath, tabOrder, select) {
+    select = (select === undefined ? true : select)
+
     fs.readFile(filePath, 'utf-8', (error, data) => {
       if (error) {
         alert('Failed to read file: \'' + filePath + '\'. ' + error.message)
@@ -119,6 +121,7 @@ class App extends Component {
       let file = {};
       file.path = filePath
       file.name = filePath.substr(Math.max(filePath.lastIndexOf('\\'), filePath.lastIndexOf('/')) + 1)
+      file.ext  = filePath.substr(filePath.lastIndexOf('.') + 1)
       file.contents = data
       file.tabId = this.getNewTabId()
       file.tabOrder = tabOrder
@@ -137,11 +140,10 @@ class App extends Component {
 
       let stateChanges = { files: Object.assign({}, this.state.files, newFileEntry) }
 
-      if (selectedFileIndex !== undefined && file.tabOrder === selectedFileIndex)
+      if (select)
         stateChanges.currentFileId = file.tabId
 
-      this.setState(stateChanges)
-      this.saveSession()
+      this.setState(stateChanges, this.saveSession)
     })
   }
 

@@ -1,6 +1,6 @@
 import path from 'path';
 import url from 'url';
-import { app, BrowserWindow, Menu, ipcRenderer, dialog, ipcMain } from 'electron';
+import { app, BrowserWindow, Menu, dialog, ipcMain } from 'electron';
 
 const isDevelopment = (process.env.NODE_ENV === 'development');
 
@@ -8,10 +8,8 @@ let mainWindow = null;
 let forceQuit = false;
 
 ipcMain.on('file-save', saveCurrentFile)
-
-ipcMain.on('editor-ready', () => {
-  mainWindow.webContents.send('editor-ready')
-})
+ipcMain.on('file-choose-open', chooseOpenFile)
+ipcMain.on('editor-ready', () => mainWindow.webContents.send('editor-ready'))
 
 function getThemeChangerCallback(themeName) {
   return () => mainWindow.webContents.send('theme-change', { msg: themeName })
