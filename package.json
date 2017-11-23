@@ -1,6 +1,6 @@
 {
   "name": "addo-edit",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "description": "A code editor. Written by the Addos, for the Addos.",
   "main": "init.js",
   "author": {
