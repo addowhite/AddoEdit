@@ -11,17 +11,19 @@ class TabStream extends Component {
   render() {
     return (
       <div className="tab-stream">
-        {Object.values(this.props.files)
-          .sort((a, b) => a.tabOrder - b.tabOrder )
-          .map((file) => {
-            return (
-              <Tab name={file.name}
-                   key={file.tabId}
-                   onClick={file.onTabClick}
-                   onClose={file.onTabClose}
-                   selected={file.tabId === this.props.currentFileId} />
-            )
-          })}
+        {
+          Object.values(this.props.files)
+            .sort((a, b) => a.tabOrder - b.tabOrder )
+            .map((file) => {
+              return (
+                <Tab name={file.name}
+                     key={file.tabId}
+                     onClick={file.onTabClick}
+                     onClose={file.onTabClose}
+                     selected={file.tabId === this.props.currentFileId} />
+              )
+            })
+        }<div className="tab new-tab" onClick={this.props.newFileCallback}><p>+</p></div>
       </div>
     )
   }

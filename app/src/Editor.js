@@ -38,6 +38,7 @@ class Editor extends Component {
     this.onEditorLoad   = this.onEditorLoad.bind(this)
     this.onEditorChange = this.onEditorChange.bind(this)
     this.getCurrentFile = this.getCurrentFile.bind(this)
+    this.getMode        = this.getMode.bind(this)
 
     this.editor = undefined
 
@@ -68,6 +69,7 @@ class Editor extends Component {
     }
 
     this.settingsFilePath = app.getPath('userData') + '\\settings.json'
+    this.saveSessionTimeout = null
 
     ipcRenderer.on('theme-change', (ev, data) => {
       this.setState({ theme: data.msg })
@@ -138,8 +140,31 @@ class Editor extends Component {
 
   onEditorChange(newValue) {
     let file = this.getCurrentFile()
-    if (file)
-      file.contents = newValue
+    if (file) file.contents = newValue
+    
+    if (this.saveSessionTimeout !== null)
+      window.clearTimeout(this.saveSessionTimeout)
+    
+    this.saveSessionTimeout = window.setTimeout(() => {
+      ipcRenderer.send('save-session')
+      this.saveSessionTimeout = null
+    }, 500)
+  }
+  
+  getMode() {
+    let ext = 'txt'
+    
+    if (this.props.files.hasOwnProperty(this.props.currentFileId)) {
+      let currentFile = this.props.files[this.props.currentFileId]
+      
+      if (currentFile.ext && currentFile.ext !== '') {
+        ext = currentFile.ext
+      } else {
+        ext = currentFile.path.substr(currentFile.path.lastIndexOf('.') + 1)
+      }
+    }
+    
+    return this.fileExtensions[ext]
   }
 
   render() {
@@ -148,7 +173,7 @@ class Editor extends Component {
         <AceEditor
           value={this.props.files.hasOwnProperty(this.props.currentFileId) ? this.props.files[this.props.currentFileId].contents : ''}
           theme={this.state.theme}
-          mode={this.fileExtensions[this.props.files.hasOwnProperty(this.props.currentFileId) ? this.props.files[this.props.currentFileId].ext : 'txt']}
+          mode={this.getMode()}
           enableBasicAutocompletion={true}
           enableLiveAutocompletion={true}
           fontSize={this.state.fontSize}

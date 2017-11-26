@@ -24,6 +24,16 @@
   font-size: 15px;
 }
 
+.tab.new-tab {
+  width: 1em;
+  padding: 0 .5em;
+  border: none;
+}
+
+.tab.new-tab p {
+  padding: 0;
+}
+
 .tab.selected {
   background-color: #323232;
 }

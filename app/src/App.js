@@ -19,22 +19,24 @@ function cancelEvent(ev) {
 class App extends Component {
 
   constructor(props) {
-    super(props);
+    super(props)
 
-    this.getNewTabId = this.getNewTabId.bind(this);
-    this.changeTab   = this.changeTab.bind(this);
+    this.getNewTabId = this.getNewTabId.bind(this)
+    this.changeTab   = this.changeTab.bind(this)
     this.onDrop      = this.onDrop.bind(this)
-    this.openFile    = this.openFile.bind(this);
-    this.saveFile    = this.saveFile.bind(this);
-    this.saveAll     = this.saveAll.bind(this);
-    this.loadSession = this.loadSession.bind(this);
-    this.saveSession = this.saveSession.bind(this);
+    this.newFile     = this.newFile.bind(this)
+    this.restoreFile = this.restoreFile.bind(this)
+    this.openFile    = this.openFile.bind(this)
+    this.saveFile    = this.saveFile.bind(this)
+    this.saveAll     = this.saveAll.bind(this)
+    this.loadSession = this.loadSession.bind(this)
+    this.saveSession = this.saveSession.bind(this)
 
-    this.nextTabId = 0;
+    this.nextTabId = 0
 
-    this.state = {};
-    this.state.currentFileId = -1;
-    this.state.files = {};
+    this.state = {}
+    this.state.currentFileId = -1
+    this.state.files = {}
 
     this.sessionFilePath = app.getPath('userData') + '\\session.json'
 
@@ -50,6 +52,7 @@ class App extends Component {
 
     ipcRenderer.on('file-save', this.saveAll)
     ipcRenderer.on('editor-ready', this.loadSession)
+    ipcRenderer.on('save-session', this.saveSession)
   }
 
   loadSession() {
@@ -61,8 +64,10 @@ class App extends Component {
         }
 
         let session = JSON.parse(data)
-        for (let i = 0; i < session.tabs.length; ++i)
-          this.openFile(session.tabs[i].path, session.tabs[i].order, session.tabs[i].selected)
+        for (let i = 0; i < session.tabs.length; ++i) {
+          let tab = session.tabs[i]
+          this.restoreFile(tab)
+        }
       })
     }
   }
@@ -77,9 +82,12 @@ class App extends Component {
       if (!this.state.files.hasOwnProperty(fileName)) continue
       currentFile = this.state.files[fileName]
       session.tabs.push({
-        path: currentFile.path,
-        order: currentFile.tabOrder,
-        selected: (selectedFile === undefined) ? false : currentFile.tabOrder === selectedFile.tabOrder
+        path     : currentFile.path,
+        name     : currentFile.name,
+        ext      : currentFile.ext,
+        order    : currentFile.tabOrder,
+        contents : currentFile.contents,
+        selected : (selectedFile === undefined) ? false : currentFile.tabOrder === selectedFile.tabOrder
       })
     }
 
@@ -108,6 +116,72 @@ class App extends Component {
       this.changeTab(-1)
     else
       this.changeTab(Number(Object.keys(this.state.files)[0]))
+  }
+  
+  newFile() {
+    let file = {}
+    file.path = ''
+    file.name = 'Untitled'
+    file.ext  = 'txt'
+    file.contents = ''
+    file.tabId = this.getNewTabId()
+    file.tabOrder = Object.values(this.state.files).reduce((accumulator, file) => Math.max(accumulator, file.tabOrder), -1) + 1
+    file.onTabClick = (ev) => this.changeTab(file.tabId)
+    file.onTabClose = (ev) => {
+      ev.stopPropagation()
+      this.closeTab(file.tabId)
+    }
+    file.scrollTop = 0
+    
+    let newFileEntry = {}
+    newFileEntry[file.tabId] = file
+
+    let stateChanges = {
+      currentFileId: file.tabId,
+      files: Object.assign({}, this.state.files, newFileEntry)
+    }
+
+    this.setState(stateChanges, this.saveSession)
+  }
+  
+  restoreFile(fileInfo) {
+    let file = {}
+    file.path = fileInfo.path
+    file.name = fileInfo.name
+    file.ext  = fileInfo.ext
+    file.contents = fileInfo.contents
+    file.tabId = this.getNewTabId()
+    file.tabOrder = fileInfo.order
+    file.onTabClick = (ev) => this.changeTab(file.tabId)
+    file.onTabClose = (ev) => {
+      ev.stopPropagation()
+      this.closeTab(file.tabId)
+    }
+    file.scrollTop = 0
+    
+    if (!file.name || file.name === '')
+      file.name = file.path.substr(Math.max(file.path.lastIndexOf('\\'), file.path.lastIndexOf('/')) + 1)
+    
+    let addTab = ((ev, fileContents) => {
+      if (fileContents)
+        file.contents = fileContents
+      
+      let newFileEntry = {}
+      newFileEntry[file.tabId] = file
+  
+      let stateChanges = { files: Object.assign({}, this.state.files, newFileEntry) }
+      
+      if (fileInfo.selected)
+        stateChanges.currentFileId = file.tabId
+  
+      this.setState(stateChanges, this.saveSession)
+    }).bind(this)
+    
+    if (!file.contents) {
+      fs.readFile(file.path, 'utf-8', addTab)
+    } else {
+      addTab()
+    }
   }
 
   openFile(filePath, tabOrder, select) {
@@ -148,7 +222,7 @@ class App extends Component {
   }
 
   saveFile(file) {
-    if (!file) return
+    if (!file || file.path === '') return
     fs.writeFile(file.path, file.contents, (error) => {
       if (error) {
         alert('Failed to write file: \'' + file.path + '\'. ' + error.message)
@@ -166,7 +240,7 @@ class App extends Component {
   render() {
     return (
       <div className="app">
-        <TabStream currentFileId={this.state.currentFileId} files={this.state.files} />
+        <TabStream currentFileId={this.state.currentFileId} files={this.state.files} newFileCallback={this.newFile} />
         <Editor currentFileId={this.state.currentFileId} files={this.state.files} />
       </div>
     )
