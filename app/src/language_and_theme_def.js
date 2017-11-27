@@ -1,4 +1,6 @@
 let supportedLanguages = {
+  'c'    : 'c_cpp',
+  'cpp'  : 'c_cpp',
   'js'   : 'javascript',
   'java' : 'java',
   'py'   : 'python',
