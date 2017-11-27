@@ -1,30 +1,12 @@
 import React, { Component } from 'react'
 
 // Ace editor imports
-import brace from 'brace'
 import AceEditor from 'react-ace'
+import brace from 'brace'
 import 'brace/ext/language_tools'
-import 'brace/mode/javascript'
-import 'brace/mode/java'
-import 'brace/mode/python'
-import 'brace/mode/css'
-import 'brace/mode/csharp'
-import 'brace/mode/mysql'
-import 'brace/mode/json'
-import 'brace/mode/html'
-import 'brace/mode/xml'
-import 'brace/mode/php'
-import 'brace/mode/text'
-import 'brace/theme/monokai'
-import 'brace/theme/github'
-import 'brace/theme/tomorrow'
-import 'brace/theme/kuroir'
-import 'brace/theme/twilight'
-import 'brace/theme/xcode'
-import 'brace/theme/textmate'
-import 'brace/theme/solarized_dark'
-import 'brace/theme/solarized_light'
-import 'brace/theme/terminal'
+import langDef from './language_and_theme_def.js'
+Object.values(langDef.languages).forEach((languageName) => require(`brace/mode/${languageName}`))
+langDef.themes.forEach((themeName) => require(`brace/theme/${themeName}`))
 
 const electron = window.require('electron')
 const ipcRenderer = electron.ipcRenderer
@@ -54,37 +36,24 @@ class Editor extends Component {
       hidden: false
     }
 
-    this.fileExtensions = {
-      'js'   : 'javascript',
-      'java' : 'java',
-      'py'   : 'python',
-      'css'  : 'css',
-      'cs'   : 'csharp',
-      'sql'  : 'mysql',
-      'json' : 'json',
-      'html' : 'html',
-      'xml'  : 'xml',
-      'php'  : 'php',
-      'txt'  : 'text'
-    }
-
     this.settingsFilePath = app.getPath('userData') + '\\settings.json'
     this.saveSessionTimeout = null
 
+    ipcRenderer.on('font-size-change', (ev, data) => this.setState({ fontSize : data.msg }, this.saveSettings))
+    ipcRenderer.on('tab-size-change' , (ev, data) => this.setState({ tabSize  : data.msg }, this.saveSettings))
+
     ipcRenderer.on('theme-change', (ev, data) => {
-      this.setState({ theme: data.msg })
-      this.saveSettings()
+      this.setState({ theme    : data.msg }, () => {
+        this.updateTabStyles()
+        this.saveSettings()
+      })
     })
+  }
 
-    ipcRenderer.on('font-size-change', (ev, data) => {
-      this.setState({ fontSize: data.msg })
-      this.saveSettings()
-    })
-
-    ipcRenderer.on('tab-size-change', (ev, data) => {
-      this.setState({ tabSize: data.msg })
-      this.saveSettings()
-    })
+  updateTabStyles(css) {
+    let editor = document.getElementsByClassName('ace_editor')[0]
+    let backgroundColor = window.getComputedStyle(editor ,null).getPropertyValue('background-color')
+    this.tabCssText.nodeValue = `.app, .tab-stream { background-color: ${backgroundColor}; }`
   }
 
   getCurrentFile() {
@@ -114,12 +83,7 @@ class Editor extends Component {
       if (this.state.hasOwnProperty(prop) && prop !== 'value')
         stateCopy[prop] = this.state[prop]
 
-    fs.writeFileSync(this.settingsFilePath, JSON.stringify(stateCopy), (error) => {
-      if (error) {
-        alert('Failed save settings. ' + error.message)
-        return
-      }
-    })
+    fs.writeFileSync(this.settingsFilePath, JSON.stringify(stateCopy), (error) => !error || alert('Failed save settings. ' + error.message))
   }
 
   onEditorLoad(editor) {
@@ -135,36 +99,45 @@ class Editor extends Component {
       bindKey: { win: "Ctrl-O", mac: "Command-O" },
       exec: () => ipcRenderer.send('file-choose-open')
     })
+
+    this.tabCssText = document.createTextNode('')
+    this.tabStyle = document.createElement('style')
+    this.tabStyle.type = 'text/css'
+    this.tabStyle.appendChild(this.tabCssText)
+    document.head.appendChild(this.tabStyle)
+
+    this.updateTabStyles()
+
     ipcRenderer.send('editor-ready')
   }
 
   onEditorChange(newValue) {
     let file = this.getCurrentFile()
     if (file) file.contents = newValue
-    
+
     if (this.saveSessionTimeout !== null)
       window.clearTimeout(this.saveSessionTimeout)
-    
+
     this.saveSessionTimeout = window.setTimeout(() => {
       ipcRenderer.send('save-session')
       this.saveSessionTimeout = null
     }, 500)
   }
-  
+
   getMode() {
     let ext = 'txt'
-    
+
     if (this.props.files.hasOwnProperty(this.props.currentFileId)) {
       let currentFile = this.props.files[this.props.currentFileId]
-      
+
       if (currentFile.ext && currentFile.ext !== '') {
         ext = currentFile.ext
       } else {
         ext = currentFile.path.substr(currentFile.path.lastIndexOf('.') + 1)
       }
     }
-    
-    return this.fileExtensions[ext]
+
+    return langDef.languages[ext]
   }
 
   render() {

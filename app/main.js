@@ -1,6 +1,7 @@
 import path from 'path';
 import url from 'url';
 import { app, BrowserWindow, Menu, dialog, ipcMain } from 'electron';
+import langDef from './src/language_and_theme_def.js'
 
 const isDevelopment = (process.env.NODE_ENV === 'development');
 
@@ -36,6 +37,10 @@ function chooseOpenFile() {
 
 function saveCurrentFile() {
   mainWindow.webContents.send('file-save')
+}
+
+function formatThemeDisplayName(themeName) {
+  return themeName.split(/[\s_]/).map((str) => str[0].toUpperCase() + str.substr(1).toLowerCase()).join(' ')
 }
 
 const installExtensions = async () => {
@@ -87,18 +92,7 @@ app.on('ready', async () => {
       submenu: [
         {
           label: 'Theme',
-          submenu: [
-            { label: 'Monokai'        , click: getThemeChangerCallback('monokai')         },
-            { label: 'Github'         , click: getThemeChangerCallback('github')          },
-            { label: 'Tomorrow'       , click: getThemeChangerCallback('tomorrow')        },
-            { label: 'Kuroir'         , click: getThemeChangerCallback('kuroir')          },
-            { label: 'Twilight'       , click: getThemeChangerCallback('twilight')        },
-            { label: 'Xcode'          , click: getThemeChangerCallback('xcode')           },
-            { label: 'Textmate'       , click: getThemeChangerCallback('textmate')        },
-            { label: 'Solarized Dark' , click: getThemeChangerCallback('solarized_dark')  },
-            { label: 'Solarized Light', click: getThemeChangerCallback('solarized_light') },
-            { label: 'Terminal'       , click: getThemeChangerCallback('terminal')        }
-          ]
+          submenu: langDef.themes.map((themeName) => ({ label: formatThemeDisplayName(themeName), click: getThemeChangerCallback(themeName) }))
         },
         {
           label: 'Font Size',
@@ -149,7 +143,7 @@ app.on('ready', async () => {
       app.on('activate', () => {
         mainWindow.show();
       });
-      
+
       app.on('before-quit', () => {
         forceQuit = true;
       });
