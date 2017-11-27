@@ -6,12 +6,21 @@ import langDef from './src/language_and_theme_def.js'
 const isDevelopment = (process.env.NODE_ENV === 'development');
 
 let mainWindow = null;
+let errorWindow = null;
 let forceQuit = false;
 
 ipcMain.on('file-save', saveCurrentFile)
 ipcMain.on('file-choose-open', chooseOpenFile)
 ipcMain.on('editor-ready', () => mainWindow.webContents.send('editor-ready'))
 ipcMain.on('save-session', () => mainWindow.webContents.send('save-session'))
+
+if (isDevelopment) {
+  ipcMain.on('search-stackoverflow', (ev, error) => {
+    errorWindow = new BrowserWindow({ title: 'Stack Overflow', width: 1280, height: 1024, show: false });
+    errorWindow.loadURL(`http://stackoverflow.com/search?q=[js]${error.message.replace(/ /g, '+')}`);
+    errorWindow.webContents.once('did-finish-load', () => errorWindow.show());
+  })
+}
 
 function getThemeChangerCallback(themeName) {
   return () => mainWindow.webContents.send('theme-change', { msg: themeName })

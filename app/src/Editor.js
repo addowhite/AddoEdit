@@ -72,7 +72,7 @@ class Editor extends Component {
         newState.currentFilePath = ''
         if (newState.tabIndex > this.props.files.length - 1)
           newState.tabIndex = -1
-        this.setState(newState)
+        this.setState(newState, this.updateTabStyles)
       })
     }
   }
@@ -105,8 +105,6 @@ class Editor extends Component {
     this.tabStyle.type = 'text/css'
     this.tabStyle.appendChild(this.tabCssText)
     document.head.appendChild(this.tabStyle)
-
-    this.updateTabStyles()
 
     ipcRenderer.send('editor-ready')
   }

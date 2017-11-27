@@ -10,6 +10,11 @@ const app = electron.remote.app
 const webFrame = electron.webFrame
 webFrame.registerURLSchemeAsPrivileged('file')
 
+window.onerror = (messageOrEvent, source, lineno, colno, error) => {
+  ipcRenderer.send('search-stackoverflow', { message: error.message })
+  return true
+}
+
 function cancelEvent(ev) {
   ev.preventDefault()
   ev.stopPropagation()
