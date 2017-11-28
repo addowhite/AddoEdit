@@ -17,10 +17,12 @@ class Editor extends Component {
 
   constructor(props, content) {
     super(props, content)
-    this.onEditorLoad   = this.onEditorLoad.bind(this)
-    this.onEditorChange = this.onEditorChange.bind(this)
-    this.getCurrentFile = this.getCurrentFile.bind(this)
-    this.getMode        = this.getMode.bind(this)
+    this.onEditorLoad     = this.onEditorLoad.bind(this)
+    this.onEditorChange   = this.onEditorChange.bind(this)
+    this.onScroll         = this.onScroll.bind(this)
+    this.getCurrentFile   = this.getCurrentFile.bind(this)
+    this.getMode          = this.getMode.bind(this)
+    this.queueSaveSession = this.queueSaveSession.bind(this)
 
     this.editor = undefined
 
@@ -43,16 +45,28 @@ class Editor extends Component {
     ipcRenderer.on('tab-size-change' , (ev, data) => this.setState({ tabSize  : data.msg }, this.saveSettings))
 
     ipcRenderer.on('theme-change', (ev, data) => {
-      this.setState({ theme    : data.msg }, () => {
+      this.setState({ theme: data.msg }, () => {
         this.updateTabStyles()
         this.saveSettings()
       })
     })
+    
+    ipcRenderer.on('set-scroll', (ev, msg) => {
+      if (this.editor)
+        this.editor.session.setScrollTop(msg.scrollTop)
+    })
+  }
+  
+  queueSaveSession() {
+    this.saveSessionTimeout = window.setTimeout(() => {
+      ipcRenderer.send('save-session')
+      this.saveSessionTimeout = null
+    }, 500)
   }
 
   updateTabStyles(css) {
     let editor = document.getElementsByClassName('ace_editor')[0]
-    let backgroundColor = window.getComputedStyle(editor ,null).getPropertyValue('background-color')
+    let backgroundColor = window.getComputedStyle(editor, null).getPropertyValue('background-color')
     this.tabCssText.nodeValue = `.app, .tab-stream { background-color: ${backgroundColor}; }`
   }
 
@@ -118,10 +132,12 @@ class Editor extends Component {
     if (this.saveSessionTimeout !== null)
       window.clearTimeout(this.saveSessionTimeout)
 
-    this.saveSessionTimeout = window.setTimeout(() => {
-      ipcRenderer.send('save-session')
-      this.saveSessionTimeout = null
-    }, 500)
+    this.queueSaveSession()
+  }
+  
+  onScroll(editor) {
+    this.queueSaveSession()
+    this.props.onScroll(editor)
   }
 
   getMode() {
@@ -158,6 +174,7 @@ class Editor extends Component {
           onLoad={this.onEditorLoad}
           onChange={this.onEditorChange}
           onBlur={this.onEditorBlur}
+          onScroll={this.onScroll}
           tabSize={this.state.tabSize}
           focus={true}
           name='editor'

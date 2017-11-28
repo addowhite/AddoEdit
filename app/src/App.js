@@ -21,6 +21,7 @@ class App extends Component {
   constructor(props) {
     super(props)
 
+    this.onScroll    = this.onScroll.bind(this)
     this.getNewTabId = this.getNewTabId.bind(this)
     this.changeTab   = this.changeTab.bind(this)
     this.onDrop      = this.onDrop.bind(this)
@@ -54,6 +55,11 @@ class App extends Component {
     ipcRenderer.on('editor-ready', this.loadSession)
     ipcRenderer.on('save-session', this.saveSession)
   }
+  
+  onScroll(editor) {
+    var file = this.state.files[this.state.currentFileId]
+    file.scrollTop = editor.session.$scrollTop
+  }
 
   loadSession() {
     if (fs.existsSync(this.sessionFilePath)) {
@@ -82,12 +88,13 @@ class App extends Component {
       if (!this.state.files.hasOwnProperty(fileName)) continue
       currentFile = this.state.files[fileName]
       session.tabs.push({
-        path     : currentFile.path,
-        name     : currentFile.name,
-        ext      : currentFile.ext,
-        order    : currentFile.tabOrder,
-        contents : currentFile.contents,
-        selected : (selectedFile === undefined) ? false : currentFile.tabOrder === selectedFile.tabOrder
+        path      : currentFile.path,
+        name      : currentFile.name,
+        ext       : currentFile.ext,
+        order     : currentFile.tabOrder,
+        scrollTop : currentFile.scrollTop,
+        contents  : currentFile.contents,
+        selected  : (selectedFile === undefined) ? false : currentFile.tabOrder === selectedFile.tabOrder
       })
     }
 
@@ -107,7 +114,14 @@ class App extends Component {
   }
 
   changeTab(tabId) {
-    this.setState({ currentFileId: tabId }, this.saveSession)
+    this.setState({ currentFileId: tabId }, () => {
+      let currentFile = this.state.files[this.state.currentFileId]
+      if (currentFile)
+        ipcRenderer.send('set-scroll', { scrollTop: currentFile.scrollTop })
+      else
+        console.log("CURRENT FILE is NULL")
+      this.saveSession()
+    })
   }
 
   closeTab(tabId) {
@@ -150,6 +164,7 @@ class App extends Component {
     file.name = fileInfo.name
     file.ext  = fileInfo.ext
     file.contents = fileInfo.contents
+    file.scrollTop = fileInfo.scrollTop || 0
     file.tabId = this.getNewTabId()
     file.tabOrder = fileInfo.order
     file.onTabClick = (ev) => this.changeTab(file.tabId)
@@ -157,7 +172,6 @@ class App extends Component {
       ev.stopPropagation()
       this.closeTab(file.tabId)
     }
-    file.scrollTop = 0
     
     if (!file.name || file.name === '')
       file.name = file.path.substr(Math.max(file.path.lastIndexOf('\\'), file.path.lastIndexOf('/')) + 1)
@@ -174,7 +188,11 @@ class App extends Component {
       if (fileInfo.selected)
         stateChanges.currentFileId = file.tabId
   
-      this.setState(stateChanges, this.saveSession)
+      this.setState(stateChanges, () => {
+        if (fileInfo.selected)
+          ipcRenderer.send('set-scroll', { scrollTop: file.scrollTop })
+        this.saveSession()
+      })
     }).bind(this)
     
     if (!file.contents) {
@@ -241,7 +259,7 @@ class App extends Component {
     return (
       <div className="app">
         <TabStream currentFileId={this.state.currentFileId} files={this.state.files} newFileCallback={this.newFile} />
-        <Editor currentFileId={this.state.currentFileId} files={this.state.files} />
+        <Editor currentFileId={this.state.currentFileId} files={this.state.files} onScroll={this.onScroll} />
       </div>
     )
   }
