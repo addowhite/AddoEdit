@@ -1,14 +1,27 @@
-.tab-stream {
+.tab-container {
   color: #e2e2e2;
   display: grid;
-  grid-template-columns: repeat(auto-fill, 160px [col-start]);
+  grid-template-columns: 1fr 2em;
   cursor: default;
   user-select: none;
 }
 
+.tab-stream {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
+}
+
 .tab {
   border: none;
-  border-right: dotted 1px #404040;
+  background-color: rgba(255, 255, 255, 0.0);
+  box-shadow: inset 0px -28px 20px -20px rgba(0, 0, 0, 0.4);
+}
+
+.tab.selected {
+  border: none;
+  background: none;
+  box-shadow: 0px 0px 20px 1px rgba(0, 0, 0, 0.4);
+  z-index: 0;
 }
 
 .tab p {
@@ -27,14 +40,11 @@
   width: 1em;
   padding: 0 .5em;
   border: none;
+  filter: none;
 }
 
 .tab.new-tab p {
   padding: 0;
-}
-
-.tab.selected {
-  background-color: rgba(255, 255, 255, 0.05);
 }
 
 .tab .close-button {
@@ -45,9 +55,9 @@
   top: -19px;
   right: 12px;
   border-radius: 4px;
-  background-color: #424242;
+  background-color: rgba(255, 255, 255, 0.1);
 }
 
 .tab .close-button:hover {
-  background-color: #606060;
+  background-color: rgba(255, 255, 255, 0.2);
 }

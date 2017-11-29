@@ -66,8 +66,9 @@ class Editor extends Component {
 
   updateTabStyles(css) {
     let editor = document.getElementsByClassName('ace_editor')[0]
+    let textColor = window.getComputedStyle(editor, null).getPropertyValue('color')
     let backgroundColor = window.getComputedStyle(editor, null).getPropertyValue('background-color')
-    this.tabCssText.nodeValue = `.app, .tab-stream { background-color: ${backgroundColor}; }`
+    this.tabCssText.nodeValue = `.app, .tab-container { color: ${textColor}; background-color: ${backgroundColor}; }`
   }
 
   getCurrentFile() {

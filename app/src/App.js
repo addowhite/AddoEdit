@@ -123,8 +123,6 @@ class App extends Component {
       let currentFile = this.state.files[this.state.currentFileId]
       if (currentFile)
         ipcRenderer.send('set-scroll', { scrollTop: currentFile.scrollTop })
-      else
-        console.log("CURRENT FILE is NULL")
       this.saveSession()
     })
   }
