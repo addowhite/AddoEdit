@@ -50,6 +50,15 @@ class Editor extends Component {
         this.saveSettings()
       })
     })
+
+    ipcRenderer.on('syntax-change', (ev, data) => {
+      if (this.props.files.hasOwnProperty(this.props.currentFileId)) {
+        let currentFile = this.props.files[this.props.currentFileId]
+        currentFile.mode = data.msg
+        
+        this.setState({ mode: this.getMode() }, this.saveSettings)
+      }
+    })
     
     ipcRenderer.on('set-scroll', (ev, msg) => {
       if (this.editor)
@@ -144,6 +153,9 @@ class Editor extends Component {
 
     if (this.props.files.hasOwnProperty(this.props.currentFileId)) {
       let currentFile = this.props.files[this.props.currentFileId]
+
+      if (currentFile.mode && currentFile.mode != 'auto')
+        return currentFile.mode;
 
       if (currentFile.ext && currentFile.ext !== '') {
         ext = currentFile.ext

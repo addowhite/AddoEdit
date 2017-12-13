@@ -5,9 +5,9 @@ import langDef from './src/language_and_theme_def.js'
 
 const isDevelopment = (process.env.NODE_ENV === 'development');
 
-let mainWindow = null;
+let mainWindow  = null;
 let errorWindow = null;
-let forceQuit = false;
+let forceQuit   = false;
 
 ipcMain.on('file-save', saveCurrentFile)
 ipcMain.on('file-choose-open', chooseOpenFile)
@@ -23,8 +23,17 @@ if (isDevelopment) {
   })
 }
 
+function arrayDistinctValues(arr) {
+  let hash = {}
+  return arr.filter((val) => !hash.hasOwnProperty(JSON.stringify(val)) | (hash[JSON.stringify(val)] = false))
+}
+
 function getThemeChangerCallback(themeName) {
   return () => mainWindow.webContents.send('theme-change', { msg: themeName })
+}
+
+function getSyntaxChangerCallback(languageName) {
+  return () => mainWindow.webContents.send('syntax-change', { msg: languageName })
 }
 
 function getFontSizeChangerCallback(fontSize) {
@@ -103,6 +112,10 @@ app.on('ready', async () => {
         {
           label: 'Theme',
           submenu: langDef.themes.map((themeName) => ({ label: formatThemeDisplayName(themeName), click: getThemeChangerCallback(themeName) }))
+        },
+        {
+          label: 'Syntax',
+          submenu: arrayDistinctValues(Object.entries(langDef.languages).map((lang) => ({ label: langDef.languageDisplayNames[lang[1]], click: getSyntaxChangerCallback(lang[1]) })))
         },
         {
           label: 'Font Size',

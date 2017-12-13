@@ -93,6 +93,7 @@ class App extends Component {
       if (!this.state.files.hasOwnProperty(fileName)) continue
       currentFile = this.state.files[fileName]
       session.tabs.push({
+        mode      : currentFile.mode,
         path      : currentFile.path,
         name      : currentFile.name,
         ext       : currentFile.ext,
@@ -137,6 +138,7 @@ class App extends Component {
   
   newFile() {
     let file = {}
+    file.mode = 'auto'
     file.path = ''
     file.name = 'Untitled'
     file.ext  = 'txt'
@@ -163,6 +165,7 @@ class App extends Component {
   
   restoreFile(fileInfo) {
     let file = {}
+    file.mode = fileInfo.mode
     file.path = fileInfo.path
     file.name = fileInfo.name
     file.ext  = fileInfo.ext
@@ -214,6 +217,7 @@ class App extends Component {
         return
       }
       let file = {};
+      file.mode = 'auto'
       file.path = filePath
       file.name = filePath.substr(Math.max(filePath.lastIndexOf('\\'), filePath.lastIndexOf('/')) + 1)
       file.ext  = filePath.substr(filePath.lastIndexOf('.') + 1)

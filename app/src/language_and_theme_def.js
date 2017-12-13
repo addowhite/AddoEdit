@@ -16,6 +16,23 @@ let supportedLanguages = {
   'txt'  : 'text'
 }
 
+let languageNames = {
+  'c_cpp'      : 'C/C++',
+  'javascript' : 'Javascript',
+  'java'       : 'Java',
+  'python'     : 'Python',
+  'css'        : 'Css',
+  'csharp'     : 'C#',
+  'mysql'      : 'MySql',
+  'json'       : 'Json',
+  'html'       : 'HTML',
+  'xml'        : 'XML',
+  'php'        : 'PHP',
+  'sh'         : 'Bash Shell',
+  'lua'        : 'Lua',
+  'text'       : 'None'
+}
+
 let editorThemes = [
   "ambiance",
   "chaos",
@@ -56,4 +73,4 @@ let editorThemes = [
   "xcode"
 ]
 
-export default { languages: supportedLanguages, themes: editorThemes }
+export default { languages: supportedLanguages, languageDisplayNames: languageNames, themes: editorThemes }
